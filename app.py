@@ -15,6 +15,7 @@ app.config.from_object(Config)
 db.init_app(app)
 migrate = Migrate(app, db)
 
+from models import User, Trade, Portfolio 
 
 @app.route('/')
 def index():
@@ -620,6 +621,9 @@ def journal_trading():
         dates=dates,
         pnl_data=pnl_data
     )
+
+with app.app_context():
+    db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=True, port=5005)
