@@ -31,7 +31,6 @@ Mako==1.3.10
 MarkupSafe==3.0.2
 multidict==4.7.6
 narwhals==1.48.1
-numpy @ file:///home/builder/.termux-build/python-numpy/src/dist/numpy-2.2.5-cp312-cp312-linux_aarch64.whl#sha256=457a628b457aee8036ec1e91fd31c70a9b466753e55d2ca1a315b25a034d4589
 packaging==25.0
 pandas-lite==0.1.1
 pillow==11.3.0
