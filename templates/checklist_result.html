@@ -1,0 +1,110 @@
+
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="text-center">
+        <!-- Icône titre -->
+        <div class="mb-4">
+          <div class="d-inline-block p-3 rounded-circle bg-gradient"
+               style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));">
+            <i class="fas fa-chart-pie fa-2x text-white"></i>
+          </div>
+          <h2 class="fw-bold mb-4 page-title"> Résultat de ta préparation</h2>
+        </div>
+
+        <!-- Cercle de progression -->
+        <div class="position-relative mb-4">
+          <div class="progress rounded-circle d-inline-flex align-items-center justify-content-center"
+               style="width: 200px; height: 200px; border: 8px solid var(--border-light);">
+            <div class="progress-bar rounded-circle" id="progressCircle"
+                 style="width: 200px; height: 200px; clip-path: circle(50% at 50% 50%); background: conic-gradient(rgba(255,255,255,0.08) 0deg, rgba(255,255,255,0.08) 360deg);">
+            </div>
+            <div class="position-absolute top-50 start-50 translate-middle">
+              <span class="display-5 fw-bold percentage-text" id="percentageText">0%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feedback (initialement caché) -->
+        <div class="feedback-box p-4 rounded-3 mb-4" id="feedbackBox" style="opacity:0;">
+          <p class="lead fw-semibold feedback-text mb-0" id="feedbackText"></p>
+        </div>
+
+        <!-- Bouton retour -->
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4 py-2">
+          <i class="fas fa-tachometer-alt me-2"></i>Retour au Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Styles adaptatifs -->
+<style>
+  .progress {
+    position: relative;
+    transition: all 0.3s ease;
+  }
+  .progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 50%;
+    clip-path: circle(50% at 50% 50%);
+    transition: background 0.5s ease;
+  }
+
+  .feedback-box {
+    transition: opacity 1s ease;
+  }
+
+  .dark-mode .page-title, .dark-mode .feedback-text, .dark-mode .percentage-text {
+    color: var(--text-light);
+  }
+  .light-mode .page-title, .light-mode .feedback-text, .light-mode .percentage-text {
+    color: var(--text-dark);
+  }
+  .dark-mode .feedback-box {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--border-dark);
+  }
+  .light-mode .feedback-box {
+    background: rgba(0,0,0,0.05);
+    border: 1px solid var(--border-light);
+  }
+</style>
+
+<!-- Animation JS -->
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const progressCircle = document.getElementById("progressCircle");
+    const percentageText = document.getElementById("percentageText");
+    const feedbackBox = document.getElementById("feedbackBox");
+    const feedbackText = document.getElementById("feedbackText");
+
+    const percentage = {{ percentage|default(0) }};
+    const feedback = "{{ feedback|default('Continue comme ça !') }}";
+
+    let current = 0;
+    const interval = setInterval(() => {
+      if(current <= percentage){
+        const angle = (current / 100) * 360;
+        let color = "#ef4444"; // rouge par défaut
+        if(current >= 80) color = "#10b981"; // vert
+        else if(current >= 60) color = "#f59e0b"; // orange
+
+        progressCircle.style.background = `conic-gradient(${color} ${angle}deg, rgba(255,255,255,0.08) ${angle}deg)`;
+        percentageText.textContent = current + "%";
+        current++;
+      } else {
+        clearInterval(interval);
+        // Affiche le feedback après remplissage
+        feedbackText.textContent = feedback;
+        feedbackBox.style.opacity = 1;
+      }
+    }, 15); // vitesse de remplissage
+  });
+</script>
+{% endblock %}

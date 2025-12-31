@@ -1,0 +1,19 @@
+# Environnement virtuel Python
+venv/
+env/
+
+# Fichiers de cache Python
+__pycache__/
+*.py[cod]
+
+# Base de données SQLite (NE PAS versionner)
+*.db
+*.sqlite3
+
+# Fichiers sensibles
+.env
+secrets.py
+
+# Système
+.DS_Store
+Thumbs.db

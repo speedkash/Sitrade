@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h2 class="mb-4">Inscription</h2>
+    <form method="POST">
+      <div class="mb-3">
+        <label class="form-label">Nom d'utilisateur</label>
+        <input type="text" class="form-control" name="username" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" name="email" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Mot de passe</label>
+        <input type="password" class="form-control" name="password" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Capital initial (USD)</label>
+        <input type="number" class="form-control" name="capital" value="1000" min="1" required>
+      </div>
+      <button type="submit" class="btn btn-primary">S'inscrire</button>
+    </form>
+    <p class="mt-3">Déjà inscrit ? <a href="{{ url_for('login') }}">Connectez-vous ici</a></p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<h3>Gestion des Publicités</h3>
+<form method="POST" class="mb-4">
+  <input type="text" name="titre" placeholder="Titre" class="form-control mb-2" required>
+  <textarea name="description" placeholder="Description" class="form-control mb-2" required></textarea>
+  <input type="url" name="image_url" placeholder="Lien de l'image" class="form-control mb-2" required>
+  <button class="btn btn-primary">Ajouter</button>
+</form>
+
+<h5>Liste des publicités</h5>
+<ul class="list-group">
+  {% for pub in pubs %}
+    <li class="list-group-item">
+      <strong>{{ pub.titre }}</strong> — {{ pub.date_pub.strftime("%d/%m/%Y") }}
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}

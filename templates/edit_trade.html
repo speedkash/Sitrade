@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier Trade #{{ trade.id }} - SpeedFint{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+            <!-- En-tête avec breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}" class="text-decoration-none">Tableau de bord</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('view_trade', trade_id=trade.id) }}" class="text-decoration-none">Trade #{{ trade.id }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Modifier</li>
+                </ol>
+            </nav>
+
+            <!-- Carte principale du formulaire -->
+            <div class="card border-0 shadow-lg">
+                <!-- En-tête avec badge de statut -->
+                <div class="card-header bg-gradient-primary text-white py-4">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h4 class="mb-1 fw-bold">
+                                <i class="fas fa-edit me-2"></i>Modifier Trade #{{ trade.id }}
+                            </h4>
+                            <div class="d-flex align-items-center mt-2">
+                                <span class="badge {% if trade.result == 'win' %}bg-success{% else %}bg-danger{% endif %} px-3 py-2 me-3">
+                                    <i class="fas {% if trade.result == 'win' %}fa-check{% else %}fa-times{% endif %} me-1"></i>
+                                    {{ trade.result|upper }}
+                                </span>
+                                <span class="fw-medium">{{ trade.symbol }}</span>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <small class="opacity-75">Dernière modif</small>
+                            <div class="fw-medium">{{ trade.date.strftime('%d/%m/%Y') }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulaire -->
+                <div class="card-body p-4 p-md-5">
+                    <form method="POST" id="tradeForm">
+                        <!-- Première ligne : Symbol et Lot -->
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-chart-line text-primary me-2"></i>Symbole
+                                </label>
+                                <input type="text" 
+                                       class="form-control form-control-lg border-2" 
+                                       name="symbol" 
+                                       value="{{ trade.symbol }}" 
+                                       required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-weight-scale text-primary me-2"></i>Taille du Lot
+                                </label>
+                                <input type="number" 
+                                       step="0.01" 
+                                       min="0.01" 
+                                       class="form-control form-control-lg border-2" 
+                                       name="lot" 
+                                       value="{{ trade.lot }}" 
+                                       required>
+                            </div>
+                        </div>
+
+                        <!-- Deuxième ligne : PnL et Résultat -->
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-money-bill-wave text-primary me-2"></i>Profit & Loss
+                                </label>
+                                <input type="number" 
+                                       step="0.01" 
+                                       class="form-control form-control-lg border-2 {% if trade.pnl >= 0 %}border-success{% else %}border-danger{% endif %}" 
+                                       name="pnl" 
+                                       value="{{ trade.pnl }}" 
+                                       required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-flag text-primary me-2"></i>Résultat
+                                </label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="result" id="result_win" value="win" 
+                                           {% if trade.result.lower() == 'win' %}checked{% endif %} required>
+                                    <label class="btn btn-outline-success btn-lg py-3" for="result_win">
+                                        <i class="fas fa-check me-2"></i>WIN
+                                    </label>
+                                    
+                                    <input type="radio" class="btn-check" name="result" id="result_loss" value="loss"
+                                           {% if trade.result.lower() == 'loss' %}checked{% endif %}>
+                                    <label class="btn btn-outline-danger btn-lg py-3" for="result_loss">
+                                        <i class="fas fa-times me-2"></i>LOSS
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Champs optionnels : Risk, Risk/Reward, Commentaire -->
+                        <div class="accordion mb-4" id="advancedOptions">
+                            <div class="accordion-item border-0">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed py-3" type="button" 
+                                            data-bs-toggle="collapse" data-bs-target="#collapseAdvanced"
+                                            aria-expanded="false" aria-controls="collapseAdvanced">
+                                        <i class="fas fa-sliders-h me-3 text-primary"></i>
+                                        <span class="fw-bold">Options avancées</span>
+                                    </button>
+                                </h2>
+                                <div id="collapseAdvanced" class="accordion-collapse collapse" 
+                                     data-bs-parent="#advancedOptions">
+                                    <div class="accordion-body pt-4">
+                                        <!-- Risk et Risk/Reward -->
+                                        <div class="row mb-3">
+                                            <div class="col-md-6 mb-3 mb-md-0">
+                                                <label class="form-label fw-bold">Risque ($)</label>
+                                                <input type="number" 
+                                                       step="0.01" 
+                                                       class="form-control" 
+                                                       name="risk" 
+                                                       value="{{ trade.risk or '' }}">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-bold">Risk/Reward</label>
+                                                <input type="number" 
+                                                       step="0.01" 
+                                                       class="form-control" 
+                                                       name="risk_reward" 
+                                                       value="{{ trade.risk_reward or '' }}">
+                                            </div>
+                                        </div>
+
+                                        <!-- Position Count -->
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">Nombre de positions</label>
+                                            <input type="number" 
+                                                   min="1" 
+                                                   class="form-control" 
+                                                   name="position_count" 
+                                                   value="{{ trade.position_count or 1 }}">
+                                        </div>
+
+                                        <!-- Commentaire -->
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">
+                                                <i class="fas fa-comment me-2 text-primary"></i>Commentaire
+                                            </label>
+                                            <textarea class="form-control" 
+                                                      name="comment" 
+                                                      rows="3">{{ trade.comment or '' }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex justify-content-between align-items-center mt-5 pt-3 border-top">
+                            <a href="{{ url_for('view_trade', trade_id=trade.id) }}" 
+                               class="btn btn-outline-secondary btn-lg px-4">
+                                <i class="fas fa-arrow-left me-2"></i>Retour
+                            </a>
+                            
+                            <div>
+                                <button type="submit" class="btn btn-primary btn-lg px-5">
+                                    <i class="fas fa-save me-2"></i>Enregistrer
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Styles supplémentaires -->
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+    
+    .form-control-lg {
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control-lg:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+        transform: translateY(-2px);
+    }
+    
+    .btn-outline-success, .btn-outline-danger {
+        border-width: 2px;
+    }
+    
+    .btn-check:checked + .btn-outline-success {
+        background-color: var(--bs-success);
+        color: white;
+    }
+    
+    .btn-check:checked + .btn-outline-danger {
+        background-color: var(--bs-danger);
+        color: white;
+    }
+    
+    .accordion-button:not(.collapsed) {
+        background-color: rgba(102, 126, 234, 0.1);
+        color: #667eea;
+    }
+    
+    /* Dark mode support */
+    .dark-mode .card {
+        background-color: var(--bs-dark) !important;
+        border-color: #444 !important;
+    }
+    
+    .dark-mode .form-control,
+    .dark-mode .form-select,
+    .dark-mode .input-group-text {
+        background-color: #2d3748 !important;
+        border-color: #4a5568 !important;
+        color: #e2e8f0 !important;
+    }
+    
+    .dark-mode .accordion-item {
+        background-color: transparent !important;
+    }
+    
+    .dark-mode .accordion-button {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        color: #e2e8f0 !important;
+    }
+    
+    .dark-mode .border-top {
+        border-color: #4a5568 !important;
+    }
+</style>
+{% endblock %}

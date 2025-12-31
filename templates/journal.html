@@ -1,0 +1,850 @@
+{% extends "base.html" %}
+
+{% block title %}Journal de Trading - SpeedFint{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- En-tête avec filtre intégré -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-lg overflow-hidden">
+                <div class="card-header bg-gradient-primary text-white py-4">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                        <div class="mb-3 mb-md-0">
+                            <h1 class="h3 mb-2">
+                                <i class="fas fa-book-open me-2"></i>Journal de Trading
+                            </h1>
+                            <p class="mb-0 opacity-75">
+                                <i class="fas fa-chart-line me-1"></i>
+                                Analysez vos performances et suivez votre évolution
+                            </p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('add_trade') }}" class="btn btn-light btn-lg">
+                                <i class="fas fa-plus me-2"></i>Nouveau Trade
+                            </a>
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light btn-lg">
+                                <i class="fas fa-arrow-left me-2"></i>Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Filtres dans le header -->
+                <div class="card-body bg-light-subtle py-3">
+                    <form method="GET" action="{{ url_for('journal_trading') }}" class="row g-3 align-items-end">
+                        <div class="col-12 col-md-3">
+                            <label class="form-label small fw-bold text-uppercase text-muted mb-1">
+                                <i class="fas fa-calendar-alt me-1"></i>Date début
+                            </label>
+                            <input type="date" name="start_date" class="form-control border-2"
+                                   value="{{ request.args.get('start_date','') }}">
+                        </div>
+                        
+                        <div class="col-12 col-md-3">
+                            <label class="form-label small fw-bold text-uppercase text-muted mb-1">
+                                <i class="fas fa-calendar-alt me-1"></i>Date fin
+                            </label>
+                            <input type="date" name="end_date" class="form-control border-2"
+                                   value="{{ request.args.get('end_date','') }}">
+                        </div>
+                        
+                        <div class="col-12 col-md-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted mb-1">
+                                <i class="fas fa-filter me-1"></i>Résultat
+                            </label>
+                            <select name="result" class="form-select border-2">
+                                <option value="">Tous les résultats</option>
+                                <option value="win" {% if request.args.get('result') == 'win' %}selected{% endif %}>Win</option>
+                                <option value="loss" {% if request.args.get('result') == 'loss' %}selected{% endif %}>Loss</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12 col-md-2">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    <i class="fas fa-search me-1"></i>Filtrer
+                                </button>
+                                <a href="{{ url_for('journal_trading') }}" class="btn btn-outline-secondary btn-lg">
+                                    <i class="fas fa-redo"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="row g-3">
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center p-3">
+                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                <div class="rounded-circle bg-primary-subtle p-3">
+                                    <i class="fas fa-chart-line text-primary fs-4"></i>
+                                </div>
+                            </div>
+                            <h3 class="mb-1 fw-bold">{{ trades|length }}</h3>
+                            <p class="text-muted mb-0">Total Trades</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center p-3">
+                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                <div class="rounded-circle bg-success-subtle p-3">
+                                    <i class="fas fa-trophy text-success fs-4"></i>
+                                </div>
+                            </div>
+                            <h3 class="mb-1 fw-bold text-success">{{ stats.win_rate }}%</h3>
+                            <p class="text-muted mb-0">Win Rate</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center p-3">
+                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                <div class="rounded-circle bg-info-subtle p-3">
+                                    <i class="fas fa-money-bill-wave text-info fs-4"></i>
+                                </div>
+                            </div>
+                            <h3 class="mb-1 fw-bold text-success">+{{ stats.total_profit }}$</h3>
+                            <p class="text-muted mb-0">Profit Total</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center p-3">
+                            <div class="d-flex align-items-center justify-content-center mb-2">
+                                <div class="rounded-circle bg-danger-subtle p-3">
+                                    <i class="fas fa-exclamation-triangle text-danger fs-4"></i>
+                                </div>
+                            </div>
+                            <h3 class="mb-1 fw-bold text-danger">-{{ stats.total_loss }}$</h3>
+                            <p class="text-muted mb-0">Loss Total</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graphiques avancés -->
+    <div class="row g-4 mb-4">
+        <!-- Graphique PnL Cumulatif -->
+        <div class="col-12 col-xl-8">
+            <div class="card border-0 shadow-lg h-100">
+                <div class="card-header border-0 bg-white py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="fas fa-chart-line text-primary me-2"></i>
+                            Évolution Cumulatif PnL
+                        </h5>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                    data-bs-toggle="dropdown">
+                                <i class="fas fa-cog me-1"></i>Options
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="toggleChartGrid()">
+                                    <i class="fas fa-th me-2"></i>Grille
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="downloadChart('pnlCumulativeChart')">
+                                    <i class="fas fa-download me-2"></i>Télécharger
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="chart-container" style="position: relative; height: 300px;">
+                        <canvas id="pnlCumulativeChart"></canvas>
+                    </div>
+                    <div class="mt-3 d-flex justify-content-center gap-4">
+                        <div class="text-center">
+                            <div class="fw-bold fs-5 text-success">+{{ stats.total_profit }}$</div>
+                            <small class="text-muted">Total Profit</small>
+                        </div>
+                        <div class="text-center">
+                            <div class="fw-bold fs-5 text-danger">-{{ stats.total_loss }}$</div>
+                            <small class="text-muted">Total Loss</small>
+                        </div>
+                        <div class="text-center">
+                            <div class="fw-bold fs-5 {% if (stats.total_profit - stats.total_loss) >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {{ stats.total_profit - stats.total_loss }}$
+                            </div>
+                            <small class="text-muted">Net Profit</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphiques secondaires -->
+        <div class="col-12 col-xl-4">
+            <div class="row g-4">
+                <!-- Donut Win/Loss -->
+                <div class="col-12">
+                    <div class="card border-0 shadow-lg h-100">
+                        <div class="card-header border-0 bg-white py-3">
+                            <h5 class="mb-0 fw-bold">
+                                <i class="fas fa-chart-pie text-primary me-2"></i>
+                                Distribution Win/Loss
+                            </h5>
+                        </div>
+                        <div class="card-body text-center p-4">
+                            <div class="position-relative" style="height: 200px;">
+                                <canvas id="winLossChart"></canvas>
+                                <div class="position-absolute top-50 start-50 translate-middle">
+                                    <div class="fw-bold fs-4">{{ stats.win_rate }}%</div>
+                                    <small class="text-muted">Win Rate</small>
+                                </div>
+                            </div>
+                            <div class="row mt-3 g-2">
+                                <div class="col-6">
+                                    <div class="p-2 rounded bg-success-subtle">
+                                        <div class="fw-bold text-success">{{ stats.wins }}</div>
+                                        <small class="text-muted">Wins</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-2 rounded bg-danger-subtle">
+                                        <div class="fw-bold text-danger">{{ stats.losses }}</div>
+                                        <small class="text-muted">Losses</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mini Graphique barres -->
+                <div class="col-12">
+                    <div class="card border-0 shadow-lg h-100">
+                        <div class="card-header border-0 bg-white py-3">
+                            <h5 class="mb-0 fw-bold">
+                                <i class="fas fa-chart-bar text-primary me-2"></i>
+                                PnL par Trade
+                            </h5>
+                        </div>
+                        <div class="card-body p-3">
+                            <canvas id="pnlBarChart" style="height: 150px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau des trades -->
+    <div class="card border-0 shadow-lg">
+        <div class="card-header bg-white border-0 py-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                <div>
+                    <h3 class="mb-2 fw-bold">
+                        <i class="fas fa-table me-2"></i>Historique des Trades
+                    </h3>
+                    <p class="text-muted mb-0">
+                        <span class="badge bg-primary rounded-pill px-3 py-2">{{ trades|length }} trades</span>
+                        <span class="mx-2">•</span>
+                        {% if request.args.get('start_date') or request.args.get('end_date') %}
+                        <span class="text-primary">
+                            <i class="fas fa-filter me-1"></i>Filtre actif
+                        </span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="mt-3 mt-md-0">
+                    <button type="button" class="btn btn-outline-primary" onclick="exportTableToCSV()">
+                        <i class="fas fa-file-export me-2"></i>Exporter CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tradesTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4 py-3 border-bottom">
+                                <input type="checkbox" class="form-check-input" id="selectAll">
+                            </th>
+                            <th class="py-3 border-bottom">
+                                <div class="d-flex align-items-center">
+                                    <span class="fw-semibold">#</span>
+                                    <div class="ms-2 d-flex flex-column">
+                                        <i class="fas fa-sort-up small text-muted" style="cursor: pointer; line-height: 0.5;"></i>
+                                        <i class="fas fa-sort-down small text-muted" style="cursor: pointer; line-height: 0.5;"></i>
+                                    </div>
+                                </div>
+                            </th>
+                            <th class="py-3 border-bottom">Symbole</th>
+                            <th class="py-3 border-bottom">Lot</th>
+                            <th class="py-3 border-bottom">PnL</th>
+                            <th class="py-3 border-bottom">Résultat</th>
+                            <th class="py-3 border-bottom">Date</th>
+                            <th class="py-3 border-bottom text-center">Graph</th>
+                            <th class="pe-4 py-3 border-bottom text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trade in trades %}
+                        <tr class="border-bottom">
+                            <td class="ps-4 align-middle">
+                                <input type="checkbox" class="form-check-input trade-checkbox" value="{{ trade.id }}">
+                            </td>
+                            <td class="align-middle">
+                                <div class="fw-semibold">{{ loop.index }}</div>
+                            </td>
+                            <td class="align-middle">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary-subtle rounded-circle p-2 me-3">
+                                        <i class="fas fa-chart-line text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ trade.symbol }}</div>
+                                        {% if trade.portfolio %}
+                                        <small class="text-muted">{{ trade.portfolio.name }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="align-middle">
+                                <span class="badge bg-secondary-subtle text-dark px-3 py-2 rounded-pill">
+                                    {{ trade.lot }}
+                                </span>
+                            </td>
+                            <td class="align-middle">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-2">
+                                        {% if trade.pnl > 0 %}
+                                        <i class="fas fa-arrow-up text-success"></i>
+                                        {% else %}
+                                        <i class="fas fa-arrow-down text-danger"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="fw-bold fs-5 {% if trade.pnl > 0 %}text-success{% elif trade.pnl < 0 %}text-danger{% endif %}">
+                                        {{ "%.2f"|format(trade.pnl) }} $
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="align-middle">
+                                {% if trade.result == 'win' %}
+                                <span class="badge bg-success bg-opacity-15 text-success px-3 py-2 rounded-pill">
+                                    <i class="fas fa-check-circle me-1"></i> WIN
+                                </span>
+                                {% else %}
+                                <span class="badge bg-danger bg-opacity-15 text-danger px-3 py-2 rounded-pill">
+                                    <i class="fas fa-times-circle me-1"></i> LOSS
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle">
+                                <div class="d-flex flex-column">
+                                    <span class="fw-medium">{{ trade.date.strftime('%d/%m/%Y') }}</span>
+                                    <small class="text-muted">{{ trade.date.strftime('%H:%M') }}</small>
+                                </div>
+                            </td>
+                            <td class="align-middle text-center">
+                                {% if trade.graph_link %}
+                                <div class="position-relative d-inline-block">
+                                    <img src="{{ trade.graph_link }}" alt="Graphique" 
+                                         class="img-fluid rounded border" 
+                                         style="max-height: 50px; max-width: 80px; object-fit: contain; cursor: pointer;"
+                                         onclick="openGraphModal('{{ trade.graph_link }}')"
+                                         data-bs-toggle="tooltip" title="Cliquer pour agrandir">
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info">
+                                        <i class="fas fa-expand"></i>
+                                    </span>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="align-middle pe-4 text-end">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <a href="{{ url_for('view_trade', trade_id=trade.id) }}" 
+                                       class="btn btn-sm btn-outline-info rounded-circle" 
+                                       data-bs-toggle="tooltip" title="Voir détails">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('edit_trade', trade_id=trade.id) }}" 
+                                       class="btn btn-sm btn-outline-warning rounded-circle"
+                                       data-bs-toggle="tooltip" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-danger rounded-circle"
+                                            onclick="confirmDelete({{ trade.id }})"
+                                            data-bs-toggle="tooltip" title="Supprimer">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <div class="py-5">
+                                    <i class="fas fa-inbox display-4 text-muted mb-3"></i>
+                                    <h4 class="text-muted">Aucun trade trouvé</h4>
+                                    <p class="text-muted mb-4">Commencez par ajouter vos premiers trades</p>
+                                    <a href="{{ url_for('add_trade') }}" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-plus me-2"></i>Ajouter un Trade
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination %}
+        <div class="card-footer bg-white border-0 py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="text-muted">
+                        Affichage de {{ ((page-1) * per_page) + 1 }} à {{ min(page * per_page, total) }} sur {{ total }} trades
+                    </small>
+                </div>
+                <nav aria-label="Pagination">
+                    <ul class="pagination mb-0">
+                        {% if page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('journal_trading', page=page-1, **request.args) }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for p in range(1, total_pages + 1) %}
+                            {% if p >= page-2 and p <= page+2 %}
+                            <li class="page-item {% if p == page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('journal_trading', page=p, **request.args) }}">{{ p }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page < total_pages %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('journal_trading', page=page+1, **request.args) }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal pour les graphiques -->
+<div class="modal fade" id="graphModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title">Graphique du Trade</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-0">
+                <img id="modalGraphImage" src="" alt="Graphique" class="img-fluid w-100 rounded-bottom">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirmation
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="fas fa-trash-alt fa-3x text-danger mb-3"></i>
+                <h4 class="mb-3">Supprimer ce trade ?</h4>
+                <p class="text-muted">Cette action est irréversible. Le trade sera définitivement supprimé.</p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="deleteForm" method="POST" action="" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Supprimer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.0/dist/chartjs-plugin-zoom.min.js"></script>
+
+<script>
+// Données côté JS
+const dates = {{ dates|tojson }};
+const pnlData = {{ pnl_data|tojson }};
+const cumulativePnl = [];
+let runningTotal = 0;
+pnlData.forEach(p => {
+    runningTotal += p;
+    cumulativePnl.push(runningTotal);
+});
+
+// Configuration des thèmes
+const isDarkMode = document.body.classList.contains('dark-mode');
+const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+const textColor = isDarkMode ? '#e2e8f0' : '#374151';
+
+// Graphique cumulatif PnL
+const cumulativeCtx = document.getElementById('pnlCumulativeChart').getContext('2d');
+const cumulativeChart = new Chart(cumulativeCtx, {
+    type: 'line',
+    data: {
+        labels: dates,
+        datasets: [{
+            label: 'Cumulatif PnL ($)',
+            data: cumulativePnl,
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 3,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#667eea',
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: {
+                    color: textColor,
+                    font: {
+                        size: 12
+                    }
+                }
+            },
+            zoom: {
+                zoom: {
+                    wheel: {
+                        enabled: true,
+                    },
+                    pinch: {
+                        enabled: true
+                    },
+                    mode: 'x',
+                },
+                pan: {
+                    enabled: true,
+                    mode: 'x',
+                }
+            }
+        },
+        scales: {
+            x: {
+                ticks: { 
+                    color: textColor,
+                    maxRotation: 45
+                },
+                grid: {
+                    color: gridColor,
+                    drawBorder: false
+                }
+            },
+            y: {
+                ticks: { 
+                    color: textColor,
+                    callback: function(value) {
+                        return '$' + value;
+                    }
+                },
+                grid: {
+                    color: gridColor,
+                    drawBorder: false
+                }
+            }
+        }
+    },
+    plugins: [ChartZoom]
+});
+
+// Graphique barres PnL
+const barCtx = document.getElementById('pnlBarChart').getContext('2d');
+const pnlColors = pnlData.map(p => p >= 0 ? '#10b981' : '#ef4444');
+new Chart(barCtx, {
+    type: 'bar',
+    data: {
+        labels: dates,
+        datasets: [{
+            label: 'PnL par trade ($)',
+            data: pnlData,
+            backgroundColor: pnlColors,
+            borderWidth: 0,
+            borderRadius: 4,
+            barPercentage: 0.7
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            x: {
+                display: false,
+                grid: {
+                    display: false
+                }
+            },
+            y: {
+                ticks: { 
+                    color: textColor,
+                    callback: function(value) {
+                        return '$' + value;
+                    }
+                },
+                grid: {
+                    color: gridColor,
+                    drawBorder: false
+                }
+            }
+        }
+    }
+});
+
+// Donut Win/Loss
+const donutCtx = document.getElementById('winLossChart').getContext('2d');
+new Chart(donutCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Win', 'Loss'],
+        datasets: [{
+            data: [{{ stats.wins }}, {{ stats.losses }}],
+            backgroundColor: ['#10b981', '#ef4444'],
+            borderWidth: 0,
+            borderRadius: 10,
+            spacing: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '75%',
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// Fonctions utilitaires
+function openGraphModal(imageUrl) {
+    document.getElementById('modalGraphImage').src = imageUrl;
+    new bootstrap.Modal(document.getElementById('graphModal')).show();
+}
+
+function confirmDelete(tradeId) {
+    const form = document.getElementById('deleteForm');
+    form.action = `/delete_trade/${tradeId}`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+function exportTableToCSV() {
+    const rows = document.querySelectorAll('#tradesTable tbody tr');
+    const csv = [];
+    
+    // En-têtes
+    const headers = [];
+    document.querySelectorAll('#tradesTable thead th').forEach(th => {
+        if (!th.querySelector('input')) {
+            headers.push(th.textContent.trim());
+        }
+    });
+    csv.push(headers.join(','));
+    
+    // Données
+    rows.forEach(row => {
+        const rowData = [];
+        row.querySelectorAll('td').forEach((td, index) => {
+            if (index !== 0) { // Exclure la colonne checkbox
+                let text = td.textContent.trim();
+                text = text.replace(/,/g, ';');
+                rowData.push(`"${text}"`);
+            }
+        });
+        csv.push(rowData.join(','));
+    });
+    
+    // Téléchargement
+    const csvContent = csv.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `trading_journal_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+function toggleChartGrid() {
+    const gridColor = cumulativeChart.options.scales.x.grid.color === 'transparent' ? 
+        (isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)') : 'transparent';
+    
+    cumulativeChart.options.scales.x.grid.color = gridColor;
+    cumulativeChart.options.scales.y.grid.color = gridColor;
+    cumulativeChart.update();
+}
+
+function downloadChart(chartId) {
+    const link = document.createElement('a');
+    link.download = `${chartId}_${new Date().toISOString().slice(0,10)}.png`;
+    link.href = document.getElementById(chartId).toDataURL('image/png');
+    link.click();
+}
+
+// Initialisation des tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Sélection multiple
+    const selectAll = document.getElementById('selectAll');
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            document.querySelectorAll('.trade-checkbox').forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+    }
+});
+</script>
+
+<!-- Styles personnalisés -->
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 12px !important;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+.table-hover tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.04) !important;
+}
+
+.badge.rounded-pill {
+    padding-left: 1.2rem !important;
+    padding-right: 1.2rem !important;
+}
+
+.page-item.active .page-link {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: transparent;
+}
+
+.btn-outline-primary {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.btn-outline-primary:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: transparent;
+    color: white;
+}
+
+/* Dark mode adjustments */
+.dark-mode .card {
+    background-color: #1a202c !important;
+    border-color: #2d3748 !important;
+}
+
+.dark-mode .table {
+    --bs-table-bg: transparent;
+    --bs-table-color: #e2e8f0;
+}
+
+.dark-mode .table-light {
+    --bs-table-bg: rgba(255, 255, 255, 0.05);
+    --bs-table-color: #e2e8f0;
+}
+
+.dark-mode .bg-light-subtle {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+.dark-mode .text-muted {
+    color: #a0aec0 !important;
+}
+
+.dark-mode .border {
+    border-color: #4a5568 !important;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .btn-lg {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.85rem;
+    }
+}
+</style>
+
+{% endblock %}

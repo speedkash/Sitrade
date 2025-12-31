@@ -1,0 +1,50 @@
+<!-- templates/admin_users.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4">Liste des utilisateurs</h2>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>#</th>
+          <th>Nom</th>
+          <th>Email</th>
+          <th>Portefeuilles</th>
+          <th>Trades</th>
+          <th>Capital Total</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ user.username }}</td>
+          <td>{{ user.email }}</td>
+          <td>{{ user.portfolios|length }}</td>
+          <td>{{ user.trades|length }}</td>
+          <td>${{ user.capital }}</td>
+          <td>
+            <a href="{{ url_for('admin_view_user', user_id=user.id) }}" class="btn btn-sm btn-info">Voir</a>
+            <a href="{{ url_for('admin_delete_user', user_id=user.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Voulez-vous vraiment supprimer cet utilisateur ?')">Supprimer</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+  .table-hover tbody tr:hover {
+    background-color: rgba(79, 70, 229, 0.1);
+  }
+  .btn-sm {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,104 @@
+<!-- templates/add_trade.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4">Ajouter un Trade</h2>
+
+  <form method="POST">
+    <div class="row">
+      <!-- Colonne gauche -->
+      <div class="col-md-6">
+        <div class="mb-3">
+          <label class="form-label">Portefeuille</label>
+          <select name="portfolio_id" class="form-select">
+            <option value="">— Aucun —</option>
+            {% for p in portfolios %}
+              <option value="{{ p.id }}">{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Symbole</label>
+          <input type="text" class="form-control" name="symbol" required placeholder="Ex: EURUSD, BTCUSD...">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Prix d'entrée</label>
+          <input type="number" step="any" class="form-control" name="entry" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Prix de sortie</label>
+          <input type="number" step="any" class="form-control" name="exit" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Lot Size</label>
+          <input type="number" step="any" class="form-control" name="lot_size" required>
+        </div>
+      </div>
+
+      <!-- Colonne droite -->
+      <div class="col-md-6">
+        <div class="mb-3">
+          <label class="form-label">Risque ($)</label>
+          <input type="number" step="any" class="form-control" name="risk" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Risk/Reward</label>
+          <input type="number" step="any" class="form-control" name="risk_reward" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Lien du graphique</label>
+          <input type="url" class="form-control" name="graph_link" placeholder="https://...">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Nombre de positions</label>
+          <input type="number" class="form-control" name="position_count" value="1" min="1">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Résultat</label>
+          <select name="result" class="form-select" required>
+            <option value="win">Win</option>
+            <option value="loss">Loss</option>
+          </select>
+        </div>
+
+	<div class="mb-3">
+	    <label for="comment">Commentaire</label>
+	    <textarea class="form-control" name="comment" id="comment" rows="4" placeholder="Ton analyse ici..."></textarea>
+	</div>
+
+    <div class="text-center mt-4">
+      <button type="submit" class="btn btn-primary px-4">
+        <i class="fas fa-save me-2"></i>Enregistrer le Trade
+      </button>
+    </div>
+  </form>
+</div>
+
+<style>
+  h2 {
+    font-weight: 700;
+    color: var(--primary-color);
+  }
+  .form-label {
+    font-weight: 600;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    border: none;
+    transition: 0.3s;
+  }
+  .btn-primary:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+</style>
+{% endblock %}

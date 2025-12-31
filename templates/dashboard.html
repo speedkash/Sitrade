@@ -1,0 +1,458 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - SpeedFint{% endblock %}
+
+{% block content %}
+<!-- Publicité affichée seulement si non vue -->
+{% if pub and not pub_vue %}
+<div class="card shadow-lg mb-4 border-start border-primary border-5">
+    <div class="card-body d-flex align-items-center">
+        <img src="{{ pub.image_url }}" alt="pub" style="width:180px;height:180px;margin-right:15px;border-radius:8px;">
+        <div class="flex-grow-1">
+            <h5 class="card-title text-primary">{{ pub.titre }}</h5>
+            <p class="card-text">{{ pub.description }}</p>
+            <a href="{{ url_for('marquer_pub_lue', pub_id=pub.id) }}" class="btn btn-outline-primary">
+                Marquer comme lu
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">Dashboard - {{ user.username }}</h2>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('checklist') }}" class="btn btn-outline-primary">
+            <i class="fas fa-clipboard-check me-1"></i> Checklist
+        </a>
+        <a href="{{ url_for('add_trade') }}" class="btn btn-success">
+            <i class="bi bi-plus-circle me-1"></i> Ajouter Trade
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Colonne de gauche -->
+    <div class="col-lg-4">
+        <!-- Sélection de portefeuille avec gestion de session -->
+        <div class="d-flex gap-2 mb-4 align-items-center">
+            <form method="get" action="{{ url_for('dashboard') }}" class="flex-grow-1">
+                <select name="portfolio_id" onchange="this.form.submit()" class="form-select form-select-sm">
+                    <option value="">Sélectionner un portefeuille</option>
+                    {% for p in portfolios %}
+                        <option value="{{ p.id }}" 
+                                {% if selected_portfolio and selected_portfolio.id == p.id %}selected{% endif %}>
+                            {{ p.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+
+            <a href="{{ url_for('create_portfolio') }}" class="btn btn-sm btn-primary">+ Nouveau</a>
+
+            {% if selected_portfolio %}
+                <!-- Bouton pour effacer la sélection -->
+                <a href="{{ url_for('clear_portfolio') }}" 
+                   class="btn btn-sm btn-outline-secondary" 
+                   title="Effacer la sélection">
+                    <i class="fas fa-times"></i>
+                </a>
+                
+                <!-- Bouton supprimer portfolio -->
+                <form method="POST" action="{{ url_for('delete_portfolio', portfolio_id=selected_portfolio.id) }}"
+                      onsubmit="return confirm('Voulez-vous vraiment supprimer ce portefeuille et tous ses trades ?');"
+                      class="m-0">
+                    <button type="submit" class="btn btn-sm btn-danger">🗑️</button>
+                </form>
+            {% endif %}
+        </div>
+
+        <!-- Afficher un message si aucun portfolio n'est sélectionné -->
+        {% if not selected_portfolio %}
+        <div class="alert alert-warning mb-4">
+            <i class="fas fa-info-circle me-2"></i>
+            Sélectionnez un portefeuille pour voir les statistiques détaillées.
+        </div>
+        {% endif %}
+
+        <!-- Capital actuel du portefeuille (afficher seulement si sélectionné) -->
+        {% if selected_portfolio %}
+        <div class="card shadow-sm mb-4 border-0" style="background: var(--card-bg);">
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ selected_portfolio.name }}</h5>
+                    <small class="opacity-75">#{{ selected_portfolio.id }}</small>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-baseline justify-content-between mb-2">
+                    <div>
+                        <h2 class="fw-bold mb-0">{{ current_capital }} USD</h2>
+                        <small class="text-muted">Capital actuel</small>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-semibold {% if stats.daily_percentage >= 0 %}text-success{% else %}text-danger{% endif %}" style="font-size: 1.2rem;">
+                            {% if stats.daily_percentage >= 0 %}+{% endif %}{{ stats.daily_percentage }}%
+                        </div>
+                        <small class="text-muted">Aujourd'hui</small>
+                    </div>
+                </div>
+                <div class="progress mb-3" style="height: 8px;">
+                    {% if stats.daily_percentage > 0 %}
+                    {% set width = stats.daily_percentage if stats.daily_percentage <= 100 else 100 %}
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ width }}%"></div>
+                    {% elif stats.daily_percentage < 0 %}
+                    <div class="progress-bar bg-danger" role="progressbar" style="width: {{ min(abs(stats.daily_percentage), 100) }}%"></div>
+                    {% endif %}
+                </div>
+                <div class="d-flex justify-content-between">
+                    <small class="text-muted">
+                        <i class="fas fa-money-bill-wave me-1"></i>
+                        Capital de base: {{ selected_portfolio.capital }} USD
+                    </small>
+                    <small class="text-muted">
+                        <i class="fas fa-chart-line me-1"></i>
+                        PnL: {{ stats.net_profit }} USD
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistiques du portefeuille -->
+        <div class="card shadow-sm mb-4 border-0" style="background: var(--card-bg);">
+            <div class="card-header fw-semibold" style="background: rgba(var(--bs-primary-rgb), 0.1);">
+                <i class="fas fa-chart-bar me-2"></i>Statistiques
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="p-3 rounded" style="background: rgba(var(--bs-primary-rgb), 0.05);">
+                            <small class="text-muted d-block">Trades totaux</small>
+                            <div class="fw-bold fs-5">{{ stats.total_trades }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded" style="background: rgba(var(--bs-primary-rgb), 0.05);">
+                            <small class="text-muted d-block">Win Rate</small>
+                            <div class="fw-bold fs-5 {% if stats.win_rate >= 50 %}text-success{% else %}text-warning{% endif %}">
+                                {{ stats.win_rate }}%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded" style="background: rgba(var(--bs-primary-rgb), 0.05);">
+                            <small class="text-muted d-block">Profit Total</small>
+                            <div class="fw-bold fs-5 text-success">+{{ stats.total_profit }} $</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded" style="background: rgba(var(--bs-primary-rgb), 0.05);">
+                            <small class="text-muted d-block">Loss Total</small>
+                            <div class="fw-bold fs-5 text-danger">-{{ stats.total_loss }} $</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded" style="background: rgba(var(--bs-primary-rgb), 0.05);">
+                            <small class="text-muted d-block">Profit Factor</small>
+                            <div class="fw-bold fs-5 {% if stats.profit_factor == '∞' or stats.profit_factor > 1.5 %}text-success{% elif stats.profit_factor > 1 %}text-warning{% else %}text-danger{% endif %}">
+                                {{ stats.profit_factor }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded" style="background: rgba(var(--bs-primary-rgb), 0.05);">
+                            <small class="text-muted d-block">Max Drawdown</small>
+                            <div class="fw-bold fs-5 {% if stats.max_drawdown <= 20 %}text-success{% elif stats.max_drawdown <= 40 %}text-warning{% else %}text-danger{% endif %}">
+                                {{ stats.max_drawdown }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Aperçu global si aucun portfolio sélectionné -->
+        <div class="card shadow-sm mb-4 border-0" style="background: var(--card-bg);">
+            <div class="card-header" style="background: rgba(var(--bs-primary-rgb), 0.1);">
+                <i class="fas fa-globe me-2"></i>Aperçu Global
+            </div>
+            <div class="card-body">
+                <div class="text-center py-4">
+                    <i class="fas fa-chart-pie display-4 text-muted mb-3"></i>
+                    <p class="text-muted mb-0">
+                        Sélectionnez un portefeuille pour voir<br>ses statistiques détaillées.
+                    </p>
+                    <p class="mt-3 mb-0">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            {{ portfolios|length }} portfolio(s) disponible(s)
+                        </small>
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- Colonne de droite -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background: rgba(var(--bs-primary-rgb), 0.1);">
+                <h5 class="mb-0">
+                    {% if selected_portfolio %}
+                        <i class="fas fa-history me-2"></i>Derniers trades - {{ selected_portfolio.name }}
+                    {% else %}
+                        <i class="fas fa-history me-2"></i>Derniers trades (Global)
+                    {% endif %}
+                </h5>
+                <div class="d-flex align-items-center gap-2">
+                    {% if selected_portfolio %}
+                        <span class="badge bg-primary-subtle text-primary">{{ trades|length }} récents</span>
+                    {% endif %}
+                    <a href="{{ url_for('journal_trading') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-list me-1"></i>Voir tout
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if trades %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr style="background: rgba(var(--bs-primary-rgb), 0.05);">
+                                <th class="ps-4">#</th>
+                                <th>Symbole</th>
+                                <th>Lot</th>
+                                <th>PnL</th>
+                                <th>Résultat</th>
+                                <th>Date</th>
+                                <th class="text-center">Graph</th>
+                                <th class="pe-4 text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in trades %}
+                            <tr>
+                                <td class="ps-4 align-middle">
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-light text-dark me-2">#{{ t.id }}</span>
+                                    </div>
+                                </td>
+                                <td class="align-middle">
+                                    <div class="fw-semibold">{{ t.symbol }}</div>
+                                </td>
+                                <td class="align-middle">
+                                    <span class="badge bg-secondary-subtle text-dark">{{ t.lot }}</span>
+                                </td>
+                                <td class="align-middle">
+                                    <div class="d-flex align-items-center">
+                                        <span class="fw-bold {% if t.pnl > 0 %}text-success{% elif t.pnl < 0 %}text-danger{% endif %}">
+                                            {{ "%.2f"|format(t.pnl) }} $
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="align-middle">
+                                    {% if t.result == 'win' %}
+                                        <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">
+                                            <i class="fas fa-check-circle me-1"></i> WIN
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill">
+                                            <i class="fas fa-times-circle me-1"></i> LOSS
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle">
+                                    <small class="text-muted">{{ t.date.strftime('%d/%m/%Y') }}</small><br>
+                                    <small class="text-muted">{{ t.date.strftime('%H:%M') }}</small>
+                                </td>
+                                <td class="align-middle text-center">
+                                    {% if t.graph_link %}
+                                        <img src="{{ t.graph_link }}" alt="Graphique" 
+                                             class="img-fluid rounded border" 
+                                             style="max-height: 35px; max-width: 60px; object-fit: contain; cursor: pointer;"
+                                             onclick="openGraph('{{ t.graph_link }}')">
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle pe-4 text-end">
+                                    <div class="d-flex gap-2 justify-content-end">
+                                        <a href="{{ url_for('view_trade', trade_id=t.id) }}" 
+                                           class="btn btn-sm btn-outline-info" 
+                                           title="Voir détails">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('edit_trade', trade_id=t.id) }}" 
+                                           class="btn btn-sm btn-outline-warning" 
+                                           title="Modifier">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <form method="POST" action="{{ url_for('delete_trade', trade_id=t.id) }}"
+                                              onsubmit="return confirm('Supprimer le trade #{{ t.id }} ?');"
+                                              class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    {% if selected_portfolio %}
+                        <i class="fas fa-chart-line display-4 text-muted mb-3"></i>
+                        <p class="text-muted">Aucun trade dans ce portefeuille</p>
+                        <a href="{{ url_for('add_trade') }}" class="btn btn-primary mt-2">
+                            <i class="bi bi-plus-circle me-1"></i> Ajouter votre premier trade
+                        </a>
+                    {% else %}
+                        <i class="fas fa-chart-pie display-4 text-muted mb-3"></i>
+                        <p class="text-muted">Aucun trade trouvé</p>
+                        <a href="{{ url_for('add_trade') }}" class="btn btn-primary mt-2">
+                            <i class="bi bi-plus-circle me-1"></i> Ajouter un trade
+                        </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Section rapide d'ajout de trade -->
+        {% if selected_portfolio %}
+        <div class="card shadow-sm mt-4 border-0">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">
+                            <i class="fas fa-plus-circle text-success me-2"></i>
+                            Ajouter un trade rapide à {{ selected_portfolio.name }}
+                        </h6>
+                        <small class="text-muted">Capital disponible: {{ current_capital }} USD</small>
+                    </div>
+                    <a href="{{ url_for('add_trade') }}" class="btn btn-success btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i> Nouveau Trade
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal pour afficher le graphique -->
+<div class="modal fade" id="graphModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Graphique du trade</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalGraphImage" src="" alt="Graphique" class="img-fluid rounded">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript pour la persistance avancée -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fonction pour ouvrir le graphique en modal
+    window.openGraph = function(imageUrl) {
+        document.getElementById('modalGraphImage').src = imageUrl;
+        new bootstrap.Modal(document.getElementById('graphModal')).show();
+    };
+
+    // Sauvegarder la sélection du portfolio dans localStorage
+    const portfolioSelect = document.querySelector('select[name="portfolio_id"]');
+    if (portfolioSelect) {
+        const selectedPortfolioId = portfolioSelect.value;
+        if (selectedPortfolioId) {
+            localStorage.setItem('selectedPortfolioId', selectedPortfolioId);
+        }
+    }
+
+    // Restaurer la sélection au chargement si présente dans localStorage
+    const savedPortfolioId = localStorage.getItem('selectedPortfolioId');
+    if (savedPortfolioId && portfolioSelect) {
+        // Vérifier si l'option existe dans le select
+        const optionExists = Array.from(portfolioSelect.options).some(opt => opt.value === savedPortfolioId);
+        if (optionExists && !portfolioSelect.value) {
+            portfolioSelect.value = savedPortfolioId;
+        }
+    }
+
+    // Auto-soumission du formulaire quand un portfolio est sélectionné depuis localStorage
+    if (savedPortfolioId && !portfolioSelect.value) {
+        window.location.href = "{{ url_for('dashboard') }}?portfolio_id=" + savedPortfolioId;
+    }
+
+    // Effacer localStorage si l'utilisateur efface la sélection
+    const clearBtn = document.querySelector('a[href*="clear-portfolio"]');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            localStorage.removeItem('selectedPortfolioId');
+        });
+    }
+});
+</script>
+
+<!-- Styles spécifiques -->
+<style>
+    .card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(var(--bs-primary-rgb), 0.03) !important;
+    }
+    
+    .badge.rounded-pill {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    
+    /* Dark mode adjustments */
+    .dark-mode .card {
+        background-color: var(--bs-dark) !important;
+        border-color: #444 !important;
+    }
+    
+    .dark-mode .table {
+        --bs-table-bg: transparent;
+        --bs-table-striped-bg: rgba(255, 255, 255, 0.05);
+        --bs-table-hover-bg: rgba(255, 255, 255, 0.075);
+        color: #e2e8f0;
+    }
+    
+    .dark-mode .table-light {
+        --bs-table-bg: rgba(255, 255, 255, 0.05);
+        color: #e2e8f0;
+    }
+    
+    .dark-mode .text-muted {
+        color: #a0aec0 !important;
+    }
+    
+    .dark-mode .btn-outline-primary {
+        border-color: #667eea;
+        color: #667eea;
+    }
+    
+    .dark-mode .btn-outline-primary:hover {
+        background-color: #667eea;
+        color: white;
+    }
+</style>
+{% endblock %}

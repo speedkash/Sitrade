@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+  <h3>Créer un nouveau portefeuille</h3>
+  <form method="POST">
+    <div class="mb-3">
+      <label for="name" class="form-label">Nom du portefeuille</label>
+      <input type="text" class="form-control" id="name" name="name" required>
+    </div>
+    <div class="mb-3">
+      <label for="capital" class="form-label">Capital initial (USD)</label>
+      <input type="number" class="form-control" id="capital" name="capital" value="1000" min="0" step="0.01">
+    </div>
+    <button type="submit" class="btn btn-primary">Créer</button>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Annuler</a>
+  </form>
+</div>
+{% endblock %}

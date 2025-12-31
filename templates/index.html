@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-4 mb-3">💹 Si Trade Dashboard</h1>
+    <p class="lead mb-4">Enregistre tes trades, suis ta performance et obtiens des suggestions automatiquement avant de t'engager sur une position.</p>
+    <div>
+        <a href="{{ url_for('register') }}" class="btn btn-success btn-lg me-2">Créer un compte</a>
+        <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">Connexion</a>
+    </div>
+</div>
+{% endblock %}

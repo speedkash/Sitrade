@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block content %}
+
+  <div class="container py-5 checklist-container">
+    <div class="header-section">
+      <h2><i class="fas fa-clipboard-check me-3"></i>Ma Checklist de Trading</h2>
+      <p>Assurez-vous que toutes vos conditions sont remplies avant d'entrer en position</p>
+    </div>
+
+    <!-- Formulaire pour ajouter une nouvelle règle -->
+    <div class="add-rule-form">
+      <form method="POST" action="{{ url_for('add_rule') }}" class="d-flex gap-3">
+        <div class="flex-grow-1">
+          <input type="text" name="text" class="form-control" placeholder="Ajouter une règle personnalisée..." required>
+        </div>
+        <button type="submit" class="btn btn-success">
+          <i class="fas fa-plus me-2"></i>Ajouter
+        </button>
+      </form>
+    </div>
+
+    {% if rules %}
+    <form method="POST" action="{{ url_for('checklist') }}">
+      <div class="checklist-card">
+        <div class="checklist-header">
+          <h3><i class="fas fa-tasks"></i> Règles de Trading</h3>
+        </div>
+        <ul class="checklist-items">
+          {% for rule in rules %}
+          <li class="checklist-item">
+            <input type="checkbox" name="rules" value="{{ rule.id }}" id="rule-{{ rule.id }}" {% if rule.checked %}checked{% endif %} class="form-check-input">
+            <label for="rule-{{ rule.id }}" class="rule-text {% if rule.checked %}completed{% endif %}">{{ rule.text }}</label>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      
+      <div class="text-center mt-4">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-chart-line me-2"></i>Évaluer ma préparation
+        </button>
+      </div>
+    </form>
+    {% else %}
+    <div class="checklist-card">
+      <div class="empty-state">
+        <i class="fas fa-clipboard-list"></i>
+        <h4>Aucune règle encore</h4>
+        <p class="mb-0">Ajoutez votre première règle ci-dessus pour commencer à structurer votre processus de trading !</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  <style>
+    :root {
+      --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      --card-bg: #1e293b;
+      --card-hover: #2d3748;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --border-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+    }
+    
+    .checklist-container {
+      max-width: 800px;
+    }
+    
+    .header-section {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    
+    .header-section h2 {
+      font-weight: 700;
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .header-section p {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+    }
+    
+    .add-rule-form {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 1.5rem;
+      border: 1px solid var(--border-color);
+      backdrop-filter: blur(10px);
+      margin-bottom: 2rem;
+    }
+    
+    .form-control {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      border-radius: 12px;
+      padding: 0.75rem 1rem;
+    }
+    
+    .form-control::placeholder {
+      color: var(--text-secondary);
+      opacity: 1;
+    }
+    
+    .form-control:focus {
+      background: rgba(15, 23, 42, 0.8);
+      border-color: #667eea;
+      box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+      color: var(--text-primary);
+    }
+    
+    .btn-success {
+      background: var(--success-gradient);
+      border: none;
+      border-radius: 12px;
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+    }
+    
+    .checklist-card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+    }
+    
+    .checklist-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(30, 41, 59, 0.4);
+    }
+    
+    .checklist-header h3 {
+      font-weight: 600;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    
+    .checklist-items {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .checklist-item {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: all 0.2s ease;
+    }
+    
+    .checklist-item:last-child {
+      border-bottom: none;
+    }
+    
+    .checklist-item:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+    
+    .form-check-input {
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 6px;
+      border: 2px solid var(--border-color);
+      background: transparent;
+    }
+    
+    .form-check-input:checked {
+      background: var(--success-gradient);
+      border-color: transparent;
+    }
+    
+    .rule-text {
+      flex: 1;
+      font-size: 1.05rem;
+      line-height: 1.5;
+    }
+    
+    .rule-text.completed {
+      text-decoration: line-through;
+      opacity: 0.7;
+    }
+    
+    .btn-primary {
+      background: var(--primary-gradient);
+      border: none;
+      border-radius: 12px;
+      padding: 0.85rem 2rem;
+      font-weight: 600;
+      font-size: 1.1rem;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--text-secondary);
+    }
+    
+    .empty-state i {
+      font-size: 3rem;
+      margin-bottom: 1.5rem;
+      opacity: 0.3;
+    }
+    
+    .empty-state h4 {
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text-primary);
+    }
+    
+    .progress-container {
+      margin-top: 1rem;
+      padding: 0 1.5rem 1.5rem;
+    }
+    
+    .progress-bar {
+      height: 8px;
+      border-radius: 4px;
+      background: var(--success-gradient);
+    }
+    
+    .progress-text {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+    }
+  </style>
+{% endblock %}
