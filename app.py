@@ -15,7 +15,13 @@ app.config.from_object(Config)
 db.init_app(app)
 migrate = Migrate(app, db)
 
-from models import User, Trade, Portfolio 
+from models import User, Trade, Portfolio
+
+# --- DÉBUT DU CODE À AJOUTER ---
+# Créer un contexte d'application et initialiser les tables
+with app.app_context():
+    db.create_all()
+    print("✅ Initialisation de la base de données terminée.")
 
 @app.route('/')
 def index():
@@ -621,9 +627,6 @@ def journal_trading():
         dates=dates,
         pnl_data=pnl_data
     )
-
-with app.app_context():
-    db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=True, port=5005)
